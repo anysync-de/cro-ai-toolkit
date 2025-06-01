@@ -10,53 +10,85 @@ app = Flask(__name__)
 
 # Hilfsfunktion für das Crawling
 
-def crawl_website(start_url, max_pages=50, max_depth=2):
+def crawl_website(start_url, max_categories=50, max_products_per_category=5):
     visited = set()
-    queue = [(start_url, 0)]
     result = {
-        'homepage': None,
+        'homepage': start_url,
         'category_pages': [],
         'product_pages': [],
         'cart_pages': [],
         'checkout_pages': [],
         'content_pages': []
     }
-    while queue and len(visited) < max_pages:
-        url, depth = queue.pop(0)
-        if url in visited or depth > max_depth:
-            continue
-        try:
-            resp = requests.get(url, timeout=5)
-            if resp.status_code != 200:
-                continue
-            soup = BeautifulSoup(resp.text, 'html.parser')
-            visited.add(url)
-            # Seitentyp-Erkennung (vereinfachte Muster)
-            if depth == 0:
-                result['homepage'] = url
-            elif re.search(r'(kategorie|category|shop|products|plp)', url, re.I):
-                result['category_pages'].append(url)
-            elif re.search(r'(produkt|product|pdp|item|detail)', url, re.I):
-                result['product_pages'].append(url)
-            elif re.search(r'(cart|warenkorb)', url, re.I):
-                result['cart_pages'].append(url)
-            elif re.search(r'(checkout|kasse|zahlung)', url, re.I):
-                result['checkout_pages'].append(url)
-            elif re.search(r'(blog|about|ueber-uns|impressum|content)', url, re.I):
-                result['content_pages'].append(url)
-            # Links sammeln
+    try:
+        resp = requests.get(start_url, timeout=10)
+        soup = BeautifulSoup(resp.text, 'html.parser')
+        # 1. Kategorieseiten aus Hauptnavigation (max 50)
+        category_links = set()
+        for nav in soup.find_all(['nav', 'ul', 'div'], class_=re.compile(r'(nav|menu|main|categories|hauptnavigation|kategorien)', re.I)):
+            for a in nav.find_all('a', href=True):
+                href = a['href']
+                if href.startswith('/'):
+                    href = requests.compat.urljoin(start_url, href)
+                if href.startswith(start_url) and href != start_url and href not in category_links:
+                    # Heuristik: keine Service/Info/Content-Links, keine Warenkorb/Checkout
+                    if not re.search(r'(service|hilfe|blog|impressum|kontakt|warenkorb|checkout|kasse|zahlung|agb|datenschutz|newsletter|login|faq|content|about|ueber-uns)', href, re.I):
+                        category_links.add(href)
+                if len(category_links) >= max_categories:
+                    break
+            if len(category_links) >= max_categories:
+                break
+        # Fallback: Wenn keine Kategorien gefunden, nimm alle Links von der Startseite, die wie Kategorie aussehen
+        if not category_links:
             for a in soup.find_all('a', href=True):
-                link = a['href']
-                if link.startswith('/'):
-                    link = requests.compat.urljoin(url, link)
-                if link.startswith(start_url) and link not in visited:
-                    queue.append((link, depth + 1))
-        except Exception:
-            continue
-    # Nur eindeutige URLs
-    for key in result:
-        if isinstance(result[key], list):
-            result[key] = list(dict.fromkeys(result[key]))
+                href = a['href']
+                if href.startswith('/'):
+                    href = requests.compat.urljoin(start_url, href)
+                if href.startswith(start_url) and href != start_url and href not in category_links:
+                    if re.search(r'(mode|herren|damen|schuhe|kinder|wohnen|technik|sale|neu|trend|shop|kategorie|category|plp)', href, re.I):
+                        category_links.add(href)
+                if len(category_links) >= max_categories:
+                    break
+        result['category_pages'] = list(category_links)[:max_categories]
+        # 2. Produktdetailseiten pro Kategorie (max 5 pro Kategorie)
+        product_links = set()
+        for cat_url in result['category_pages']:
+            try:
+                cat_resp = requests.get(cat_url, timeout=8)
+                cat_soup = BeautifulSoup(cat_resp.text, 'html.parser')
+                found = 0
+                for a in cat_soup.find_all('a', href=True):
+                    href = a['href']
+                    if href.startswith('/'):
+                        href = requests.compat.urljoin(cat_url, href)
+                    if href.startswith(start_url) and href != cat_url and href not in product_links:
+                        # Heuristik: Produktseiten haben oft Produktnummern, /artikel/, /p/, /product/, /details/
+                        if re.search(r'(artikel|product|pdp|details|sku|id=|/p/|/prd/|/detail/|/artikel/|/prod/|/item/)', href, re.I) or re.search(r'\d{6,}', href):
+                            product_links.add(href)
+                            found += 1
+                    if found >= max_products_per_category:
+                        break
+            except Exception:
+                continue
+        result['product_pages'] = list(product_links)
+        # 3. Warenkorb/Checkout/Content wie bisher
+        for a in soup.find_all('a', href=True):
+            href = a['href']
+            if href.startswith('/'):
+                href = requests.compat.urljoin(start_url, href)
+            if href.startswith(start_url):
+                if re.search(r'(cart|warenkorb)', href, re.I):
+                    result['cart_pages'].append(href)
+                elif re.search(r'(checkout|kasse|zahlung)', href, re.I):
+                    result['checkout_pages'].append(href)
+                elif re.search(r'(blog|about|ueber-uns|impressum|content)', href, re.I):
+                    result['content_pages'].append(href)
+        # Nur eindeutige URLs
+        for key in result:
+            if isinstance(result[key], list):
+                result[key] = list(dict.fromkeys(result[key]))
+    except Exception:
+        pass
     return result
 
 @app.route('/')

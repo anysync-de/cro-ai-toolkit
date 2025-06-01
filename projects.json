@@ -2,5 +2,41 @@
   {
     "projectName": "Baur",
     "websiteUrl": "https://www.baur.de/"
+  },
+  {
+    "projectName": "baur",
+    "websiteUrl": "https://www.baur.de/",
+    "kpis": "Conversion-Rate",
+    "brandGuidelines": "BAUR verwendet als Hauptfarbe ein leuchtendes Gelb (#FFD600) und setzt auf viel Weißraum. Die Bildsprache ist authentisch, freundlich und lebensnah, mit Fokus auf Mode, Lifestyle und Familie. Die Typografie ist modern und serifenlos. Die Ansprache ist nahbar, inspirierend und serviceorientiert („Du“). Das Logo wird immer mit ausreichend Weißraum und in Originalfarben verwendet. Die Kommunikation ist beratend, inspirierend, aber nicht aufdringlich. Alle Kanäle (Web, Print, Social Media) nutzen konsistente Farben, Schriften und Bildwelten.",
+    "personas": [
+      {
+        "name": "Sabine Müller",
+        "description": "40-jährige berufstätige Mutter, lebt in einer Kleinstadt, legt Wert auf modische, aber bezahlbare Kleidung für sich und ihre Familie. Kauft regelmäßig online ein, bevorzugt bekannte Marken und zuverlässigen Service.",
+        "goals": "Bequemer Online-Einkauf von Mode für die ganze Familie, Schnelle Lieferung, Einfache Rückgabe bei Nichtgefallen, Inspiration für neue Outfits",
+        "pains": "Lange Lieferzeiten, Unübersichtliche Navigation im Shop, Unsichere Größenangaben, Umständlicher Rückgabeprozess",
+        "vpc": {
+          "jobs": "Passende Kleidung für sich und die Familie finden, Preise vergleichen, Bestellung schnell und unkompliziert abschließen, Inspiration für neue Looks erhalten",
+          "pains": "Unsicherheit bei der Größenwahl, Angst vor schlechter Qualität, Sorge dass Rückgabe kompliziert ist, Frust bei zu langen Lieferzeiten",
+          "gains": "Große Auswahl an Marken und Größen, Schnelle Lieferung, Einfache Rückgabe, Inspirierende Outfit-Vorschläge",
+          "products": "Damen- Herren- und Kindermode, Schuhe und Accessoires und Heimtextilien, Online-Shop mit Filter- und Suchfunktion, Kundenservice",
+          "painRelievers": "Detaillierte Größentabellen, Kostenlose Rücksendung, Schneller Versand, Kundenbewertungen zu Produkten",
+          "gainCreators": "Outfit-Inspirationen und Style-Guides, Exklusive Rabatte und Aktionen, Personalisierte Produktempfehlungen, Treueprogramm für Stammkunden"
+        }
+      }
+    ],
+    "site_structure": {
+      "homepage": "https://www.baur.de/",
+      "category_pages": [
+        "https://www.baur.de/service-hilfe/shopping-vorteile/versandkosten-flatrate/?lmPromo=la,3,hk,homepage,fl,homepage.kundenvorteil3.landingpage.versandkostenflatrate.",
+        "https://www.baur.de/service-hilfe/shopping-vorteile/hepster?lmPromo=la,3,hk,homepage,fl,homepage.kooperation1.landingpage.hepster.",
+        "https://www.baur.de/service-hilfe/shopping-vorteile?lmPromo=la,3,hk,homepage,fl,homepage.kooperation2.landingpage.vorteilswelt."
+      ],
+      "product_pages": [],
+      "cart_pages": [
+        "https://www.baur.de/warenkorb"
+      ],
+      "checkout_pages": [],
+      "content_pages": []
+    }
   }
 ]
