@@ -102,5 +102,27 @@ def create_project():
     threading.Thread(target=crawl_and_update).start()
     return jsonify({'message': 'Projekt gespeichert, Crawling läuft im Hintergrund.'}), 200
 
+@app.route('/project_status')
+def project_status():
+    project_name = request.args.get('projectName')
+    website_url = request.args.get('websiteUrl')
+    projects_file = 'projects.json'
+    if not (project_name and website_url):
+        return jsonify({'error': 'Missing parameters'}), 400
+    if not os.path.exists(projects_file):
+        return jsonify({'error': 'No projects found'}), 404
+    with open(projects_file, 'r', encoding='utf-8') as f:
+        try:
+            projects = json.load(f)
+        except json.JSONDecodeError:
+            return jsonify({'error': 'Corrupt projects file'}), 500
+    for p in projects[::-1]:
+        if p['projectName'] == project_name and p['websiteUrl'] == website_url:
+            if p.get('site_structure'):
+                return jsonify({'status': 'done', 'site_structure': p['site_structure']}), 200
+            else:
+                return jsonify({'status': 'crawling'}), 200
+    return jsonify({'error': 'Project not found'}), 404
+
 if __name__ == '__main__':
     app.run(debug=True) 

@@ -128,11 +128,57 @@
           document.getElementById('projectForm').reset();
           personaCount = 1;
           renderPersonas();
+          // Starte Polling für Crawling-Status
+          pollCrawlingStatus(projectName, websiteUrl);
         } else {
           feedback.textContent = 'Fehler beim Speichern des Projekts.';
           feedback.style.display = 'block';
         }
       });
+
+      function pollCrawlingStatus(projectName, websiteUrl) {
+        const feedback = document.getElementById('feedback');
+        feedback.textContent = 'Crawling läuft...';
+        feedback.style.display = 'block';
+        const resultDiv = document.getElementById('crawlResult') || (function() {
+          const div = document.createElement('div');
+          div.id = 'crawlResult';
+          div.className = 'mt-4 text-sm text-gray-700';
+          feedback.parentNode.appendChild(div);
+          return div;
+        })();
+        resultDiv.innerHTML = '';
+        let interval = setInterval(async () => {
+          const res = await fetch(`/project_status?projectName=${encodeURIComponent(projectName)}&websiteUrl=${encodeURIComponent(websiteUrl)}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.status === 'done') {
+              clearInterval(interval);
+              feedback.textContent = 'Crawling abgeschlossen! Folgende Seitentypen wurden erkannt:';
+              let html = '<ul class="list-disc ml-6">';
+              for (const [typ, urls] of Object.entries(data.site_structure)) {
+                if (!urls || (Array.isArray(urls) && urls.length === 0)) continue;
+                if (typeof urls === 'string') {
+                  html += `<li><b>${typ}:</b> <a href="${urls}" target="_blank" class="text-blue-600 underline">${urls}</a></li>`;
+                } else if (Array.isArray(urls)) {
+                  html += `<li><b>${typ}:</b><ul class="list-disc ml-6">`;
+                  urls.forEach(u => {
+                    html += `<li><a href="${u}" target="_blank" class="text-blue-600 underline">${u}</a></li>`;
+                  });
+                  html += '</ul></li>';
+                }
+              }
+              html += '</ul>';
+              resultDiv.innerHTML = html;
+            } else {
+              resultDiv.innerHTML = '<span class="italic">Crawling läuft noch...</span>';
+            }
+          } else {
+            clearInterval(interval);
+            feedback.textContent = 'Fehler beim Abrufen des Crawling-Status.';
+          }
+        }, 2000);
+      }
     </script>
   </body>
 </html> 
