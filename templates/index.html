@@ -19,26 +19,115 @@
           <label for="websiteUrl" class="block text-sm font-medium text-gray-700">Website-URL</label>
           <input type="url" id="websiteUrl" name="websiteUrl" required class="mt-1 block w-full rounded border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500" />
         </div>
-        <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">Speichern</button>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Zielgruppen / Personas</label>
+          <div id="personasContainer"></div>
+          <button type="button" id="addPersonaBtn" class="mt-2 bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600">+ Persona hinzufügen</button>
+        </div>
+        <div>
+          <label for="kpis" class="block text-sm font-medium text-gray-700">Haupt-KPIs der Website</label>
+          <input type="text" id="kpis" name="kpis" placeholder="z.B. Conversion Rate, Warenkorb-Abbrüche" class="mt-1 block w-full rounded border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500" />
+        </div>
+        <div>
+          <label for="brandGuidelines" class="block text-sm font-medium text-gray-700">Markenrichtlinien (Link oder Text)</label>
+          <input type="text" id="brandGuidelines" name="brandGuidelines" placeholder="https://... oder kurze Beschreibung" class="mt-1 block w-full rounded border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500" />
+        </div>
+        <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">Speichern & Website crawlen</button>
       </form>
       <div id="feedback" class="mt-4 text-center text-green-600 font-semibold" style="display:none;"></div>
     </div>
     <script>
+      let personaCount = 0;
+      function createPersonaFields(idx) {
+        return `
+          <div class="persona border rounded p-4 mb-4 bg-gray-50">
+            <div class="flex justify-between items-center mb-2">
+              <span class="font-semibold">Persona #${idx + 1}</span>
+              <button type="button" onclick="removePersona(${idx})" class="text-red-500 hover:underline">Entfernen</button>
+            </div>
+            <label class="block text-xs font-medium">Name</label>
+            <input type="text" name="personaName" required class="mb-2 block w-full rounded border-gray-300" />
+            <label class="block text-xs font-medium">Beschreibung</label>
+            <textarea name="personaDescription" required class="mb-2 block w-full rounded border-gray-300"></textarea>
+            <label class="block text-xs font-medium">Hauptziele</label>
+            <input type="text" name="personaGoals" required class="mb-2 block w-full rounded border-gray-300" />
+            <label class="block text-xs font-medium">Pain Points</label>
+            <input type="text" name="personaPains" required class="mb-2 block w-full rounded border-gray-300" />
+            <div class="mt-2 mb-1 font-semibold">Value Proposition Canvas</div>
+            <label class="block text-xs font-medium">Customer Jobs</label>
+            <input type="text" name="vpcJobs" required class="mb-2 block w-full rounded border-gray-300" />
+            <label class="block text-xs font-medium">Pains</label>
+            <input type="text" name="vpcPains" required class="mb-2 block w-full rounded border-gray-300" />
+            <label class="block text-xs font-medium">Gains</label>
+            <input type="text" name="vpcGains" required class="mb-2 block w-full rounded border-gray-300" />
+            <label class="block text-xs font-medium">Products & Services</label>
+            <input type="text" name="vpcProducts" required class="mb-2 block w-full rounded border-gray-300" />
+            <label class="block text-xs font-medium">Pain Relievers</label>
+            <input type="text" name="vpcPainRelievers" required class="mb-2 block w-full rounded border-gray-300" />
+            <label class="block text-xs font-medium">Gain Creators</label>
+            <input type="text" name="vpcGainCreators" required class="mb-2 block w-full rounded border-gray-300" />
+          </div>
+        `;
+      }
+      function renderPersonas() {
+        const container = document.getElementById('personasContainer');
+        container.innerHTML = '';
+        for (let i = 0; i < personaCount; i++) {
+          container.innerHTML += createPersonaFields(i);
+        }
+      }
+      function removePersona(idx) {
+        personaCount--;
+        renderPersonas();
+      }
+      document.getElementById('addPersonaBtn').addEventListener('click', function() {
+        personaCount++;
+        renderPersonas();
+      });
+      // Initial eine Persona anzeigen
+      personaCount = 1;
+      renderPersonas();
+
       document.getElementById('projectForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const projectName = document.getElementById('projectName').value;
         const websiteUrl = document.getElementById('websiteUrl').value;
+        const kpis = document.getElementById('kpis').value;
+        const brandGuidelines = document.getElementById('brandGuidelines').value;
+        // Personas sammeln
+        const personas = [];
+        const personaDivs = document.querySelectorAll('.persona');
+        personaDivs.forEach(div => {
+          const fields = div.querySelectorAll('input, textarea');
+          const persona = {
+            name: fields[0].value,
+            description: fields[1].value,
+            goals: fields[2].value,
+            pains: fields[3].value,
+            vpc: {
+              jobs: fields[4].value,
+              pains: fields[5].value,
+              gains: fields[6].value,
+              products: fields[7].value,
+              painRelievers: fields[8].value,
+              gainCreators: fields[9].value
+            }
+          };
+          personas.push(persona);
+        });
         const feedback = document.getElementById('feedback');
         feedback.style.display = 'none';
         const response = await fetch('/create_project', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ projectName, websiteUrl })
+          body: JSON.stringify({ projectName, websiteUrl, kpis, brandGuidelines, personas })
         });
         if (response.ok) {
-          feedback.textContent = 'Projekt erfolgreich gespeichert!';
+          feedback.textContent = 'Projekt gespeichert & Website-Crawling gestartet!';
           feedback.style.display = 'block';
           document.getElementById('projectForm').reset();
+          personaCount = 1;
+          renderPersonas();
         } else {
           feedback.textContent = 'Fehler beim Speichern des Projekts.';
           feedback.style.display = 'block';
